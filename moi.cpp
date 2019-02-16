@@ -2,15 +2,17 @@
 #include <cstdlib>
 #include <uWS/uWS.h>
 
-char sigStart[] = "{\"signal\":\"start\"}";
-char countAns1[] = "{\"answer\":\"0\"}";
-char countAns2[] = "{\"answer\":\"10\"}";
-char *ansTmp, *ans;
+const char* sigStart = "{\"signal\":\"start\"}";
+const char* ansPrefix = "{\"answer\":\"";
+char countAns1[] = "{\"answer\":0}";
+char countAns2[] = "{\"answer\":10}";
+char* ansTmp;
+char* ans;
+int pointer;
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	ansTmp = (char*) malloc(512);
-	memcpy(ansTmp, countAns1, 11);
+	memcpy(ansTmp, ansPrefix, 11);
 
 	uWS::Hub h;
 
@@ -21,7 +23,7 @@ int main(int argc, char *argv[])
 		//printf("<RECV> %s\n", message);
 
 		if (message[16] == 'u') {
-			char count = 48;
+			char count = '0';
 			int status = 0;
 
 			for (int i = 31; message[i] != '"'; i++) {
@@ -39,46 +41,45 @@ int main(int argc, char *argv[])
 
 			if (count < 58) {
 				ans = countAns1;
-				ans[11] = count;
+				ans[10] = count;
+				pointer = 12;
 			} else {
 				ans = countAns2;
-				ans[12] = count - 10;
+				ans[11] = count - 10;
+				pointer = 13;
 			}
 		} else if (message[16] == 'p') {
 			ans = message+22;
-			memcpy(ans, countAns1, 11);
+			memcpy(ans, ansPrefix, 11);
 
 			int status = 0;
-			int i = 11;
 
-			for (; ans[i] != '"'; i++) {
-				if (ans[i] == 'm') {
+			for (pointer = 11; ans[pointer] != '"'; pointer++) {
+				if (ans[pointer] == 'm') {
 					status = 1;
-				} else if (status == 1 && ans[i] == 'o') {
+				} else if (status == 1 && ans[pointer] == 'o') {
 					status = 2;
-				} else if (status == 2 && ans[i] == 'i') {
+				} else if (status == 2 && ans[pointer] == 'i') {
 					status = 0;
-					ans[i-2] = 'M';
-					ans[i-1] = 'O';
-					ans[i] = 'I';
+					ans[pointer-2] = 'M';
+					ans[pointer-1] = 'O';
+					ans[pointer] = 'I';
 				} else {
 					status = 0;
 				}
 			}
 
-			ans[i] = '"';
-			ans[i+1] = '}';
-			ans[i+2] = '\0';
+			ans[pointer++] = '"';
+			ans[pointer++] = '}';
 		} else if (message[16] == 'v') {
 			ans = ansTmp;
-			int pointer = 11;
 			int status = 0;
 
 			int i = 33;
 			for(; message[i] != '"'; i++);
 			i--;
 
-			for (; message[i] != '"'; i--) {
+			for (pointer = 11; message[i] != '"'; i--) {
 				ans[pointer++] = message[i];
 
 				if (message[i] == 'i') {
@@ -94,12 +95,11 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			ans[pointer] = '"';
-			ans[pointer+1] = '}';
-			ans[pointer+2] = '\0';
+			ans[pointer++] = '"';
+			ans[pointer++] = '}';
 		} else if (message[16] == 't') {
 			ans = ansTmp;
-			int pointer = 11;
+			pointer = 11;
 			int status = 0;
 
 			message[26] = message[28] = '_';
@@ -116,16 +116,15 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			ans[pointer] = '"';
-			ans[pointer+1] = '}';
-			ans[pointer+2] = '\0';
+			ans[pointer++] = '"';
+			ans[pointer++] = '}';
 		} else {
 			printf("<STOP> %s\n", message);
 			h.getDefaultGroup<uWS::CLIENT>().close();
 			return;
 		}
 
-		ws->send(ans);
+		ws->send(ans, pointer, uWS::OpCode::TEXT, nullptr, nullptr, false);
 		//printf("<SEND> %s\n", ans);
 	});
 
