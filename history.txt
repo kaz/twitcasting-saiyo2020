@@ -1,0 +1,10 @@
+yum install -y openssl-devel zlib-devel git gcc-c++
+git clone --branch v0.14 https://github.com/uNetworking/uWebSockets.git
+cd uWebSockets
+make
+make install
+cd
+nano a.cpp
+g++ -lz -lssl -luWS -Ofast -march=native a.cpp
+./a.out
+while true; do ./a.out && sleep 9; done
