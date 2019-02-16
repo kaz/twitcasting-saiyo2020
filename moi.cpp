@@ -45,30 +45,30 @@ int main(int argc, char *argv[])
 				ans[12] = count - 10;
 			}
 		} else if (message[16] == 'p') {
-			ans = ansTmp;
-			int pointer = 11;
+			ans = message+22;
+			memcpy(ans, countAns1, 11);
+
 			int status = 0;
+			int i = 11;
 
-			for (int i = 33; message[i] != '"'; i++) {
-				ans[pointer++] = message[i];
-
-				if (message[i] == 'm') {
+			for (; ans[i] != '"'; i++) {
+				if (ans[i] == 'm') {
 					status = 1;
-				} else if (status == 1 && message[i] == 'o') {
+				} else if (status == 1 && ans[i] == 'o') {
 					status = 2;
-				} else if (status == 2 && message[i] == 'i') {
+				} else if (status == 2 && ans[i] == 'i') {
 					status = 0;
-					ans[pointer-3] = 'M';
-					ans[pointer-2] = 'O';
-					ans[pointer-1] = 'I';
+					ans[i-2] = 'M';
+					ans[i-1] = 'O';
+					ans[i] = 'I';
 				} else {
 					status = 0;
 				}
 			}
 
-			ans[pointer] = '"';
-			ans[pointer+1] = '}';
-			ans[pointer+2] = '\0';
+			ans[i] = '"';
+			ans[i+1] = '}';
+			ans[i+2] = '\0';
 		} else if (message[16] == 'v') {
 			ans = ansTmp;
 			int pointer = 11;
