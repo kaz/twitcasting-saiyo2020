@@ -10,7 +10,8 @@ func main() {
 	var ans []byte
 	buffer := make([]byte, 512)
 	sigStart := []byte("{\"signal\":\"start\"}")
-	countAns := []byte("{\"answer\":0}")
+	countAns1 := []byte("{\"answer\":0}")
+	countAns2 := []byte("{\"answer\":10}")
 	ansTemplate := append([]byte("{\"answer\":\""), make([]byte, 512)...)
 
 	ws, err := websocket.Dial("wss://saiyo2020.moi.st/websocket/ae5108bdb3dd4326a6a41693a4d7b0de", "", "https://saiyo2020.moi.st/")
@@ -42,8 +43,13 @@ func main() {
 				}
 			}
 
-			ans = countAns
-			countAns[10] = count
+			if count < 58 {
+				ans = countAns1
+				ans[10] = count
+			} else {
+				ans = countAns2
+				ans[11] = count - 10
+			}
 		} else if buffer[16] == 112 {
 			ans = ansTemplate
 			pointer := 11
