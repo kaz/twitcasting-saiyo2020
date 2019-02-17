@@ -24,10 +24,9 @@ Connection: Upgrade\n\
 Upgrade: websocket\n\
 \n";
 
-const char* signal_start = "\x81\x92\0\0\0\0{\"signal\":\"start\"}";
-char answer_template[512] = "\x81\xfe\0.\0\0\0\0{\"answer\":\"";
-char answer_template_count_1digit[] = "\x81\x8c\0\0\0\0{\"answer\":0}";
-char answer_template_count_2digit[] = "\x81\x8d\0\0\0\0{\"answer\":10}";
+const char* signal_start = "\x82\x92\0\0\0\0{\"signal\":\"start\"}";
+char answer_template[256] = "\x82\xfe\0\0\0\0\0\0{\"answer\":\"";
+char answer_template_count[] = "\x82\x8d\0\0\0\0{\"answer\":99}";
 
 int main() {
 	int read;
@@ -49,6 +48,8 @@ int main() {
 	SSL_library_init();
 
 	SSL_CTX* ctx = SSL_CTX_new(SSLv23_client_method());
+	SSL_CTX_set_cipher_list(ctx, "AES128-GCM-SHA256");
+
 	SSL* ssl = SSL_new(ctx);
 	SSL_set_fd(ssl, sockfd);
 	SSL_connect(ssl);
@@ -62,11 +63,6 @@ int main() {
 	SSL_write(ssl, signal_start, 24);
 
 	while (1) {
-		/*
-		read = SSL_read(ssl, buf, buf_len);
-		for(message = buf; *message != '{'; message++, read--);
-		*/
-
 		read = SSL_read(ssl, buf, buf_len) - 4;
 		message = buf + 4;
 		LOG(1, message, read);
@@ -74,29 +70,30 @@ int main() {
 		status = 0;
 
 		if (message[16] == 'u') {
+			response = (char*) answer_template_count;
+			pointer = 19;
+
 			char count = '0';
 
 			for (int i = 31; message[i] != '"'; i++) {
 				if (message[i] == 'm') {
 					status = 1;
 				} else if (status == 1 && message[i] == 'o') {
-					status = 2;
+					status++;
 				} else if (status == 2 && message[i] == 'i') {
-					count++;
 					status = 0;
+					count++;
 				} else {
 					status = 0;
 				}
 			}
 
-			if (count < 58) {
-				response = (char*) answer_template_count_1digit;
-				response[16] = count;
-				pointer = 18;
-			} else {
-				response = (char*) answer_template_count_2digit;
+			if (count > '9') {
+				response[16] = '1';
 				response[17] = count - 10;
-				pointer = 19;
+			} else {
+				response[16] = ' ';
+				response[17] = count;
 			}
 		} else if (message[16] == 'p') {
 			response = message + 14;
@@ -106,7 +103,7 @@ int main() {
 				if (response[pointer] == 'm') {
 					status = 1;
 				} else if (status == 1 && response[pointer] == 'o') {
-					status = 2;
+					status++;
 				} else if (status == 2 && response[pointer] == 'i') {
 					status = 0;
 					response[pointer-2] = 'M';
@@ -133,7 +130,7 @@ int main() {
 				if (message[i] == 'i') {
 					status = 1;
 				} else if (status == 1 && message[i] == 'o') {
-					status = 2;
+					status++;
 				} else if (status == 2 && message[i] == 'm') {
 					status = 0;
 					response[pointer-1] = 'i';
