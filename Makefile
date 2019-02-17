@@ -2,8 +2,8 @@ run: clean build
 	while true; do ./a.out && sleep 9; done
 
 build:
-	g++ -lz -lssl -luWS -Ofast -march=native -fno-stack-protector -fno-pie a.cpp
+	gcc -lssl -Ofast -march=native a.c
 	strip a.out
 
 clean:
-	rm a.out
+	rm -f a.out
